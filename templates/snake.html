@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snake Game</title>
+    <style>
+        #board {
+            display: grid;
+            grid-template-columns: repeat(20, 20px);
+            grid-template-rows: repeat(20, 20px);
+        }
+        .cell {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ddd;
+        }
+        .snake { background-color: green; }
+        .food { background-color: red; }
+    </style>
+</head>
+<body>
+    <h1>Snake Game</h1>
+    <h3>Score: <span id="score">0</span></h3>
+    <div id="board"></div>
+
+    <script>
+        const boardDiv = document.getElementById("board");
+        const scoreDiv = document.getElementById("score");
+        const boardSize = 20;
+
+        // Create board
+        const cells = [];
+        for(let i=0; i<boardSize*boardSize; i++){
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+            boardDiv.appendChild(cell);
+            cells.push(cell);
+        }
+
+        let snake = [];
+        let food = {};
+        let currentDirection = "RIGHT"; 
+
+        // arrow keys to change direction
+        document.addEventListener("keydown", e => {
+            if(e.key === "ArrowLeft" && currentDirection !== "RIGHT") currentDirection = "LEFT";
+            else if(e.key === "ArrowRight" && currentDirection !== "LEFT") currentDirection = "RIGHT";
+            else if(e.key === "ArrowUp" && currentDirection !== "DOWN") currentDirection = "UP";
+            else if(e.key === "ArrowDown" && currentDirection !== "UP") currentDirection = "DOWN";
+        });
+
+        async function updateBoard(direction){
+            const body = JSON.stringify({direction});
+            const response = await fetch("/move", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body
+            });
+            const data = await response.json();
+
+            if(data.game_over){
+                alert("Game Over! Score: "+data.score);
+        
+                window.location.reload();
+            }
+
+            snake = data.snake;
+            food = data.food;
+            scoreDiv.innerText = data.score;
+
+            // board
+            for(let i=0; i<cells.length; i++){
+                cells[i].style.backgroundColor = "#f0f0f0";
+            }
+
+            // snake
+            snake.forEach((part, index) => {
+                const cellIndex = part.y * boardSize + part.x;
+                cells[cellIndex].style.backgroundColor = index === 0 ? "green" : "lime";
+            });
+
+            // food
+            const foodIndex = food.y * boardSize + food.x;
+            cells[foodIndex].style.backgroundColor = "red";
+        }
+
+        
+        setInterval(() => updateBoard(currentDirection), 200);
+
+    </script>
+</body>
+</html>
